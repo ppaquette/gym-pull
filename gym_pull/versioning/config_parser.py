@@ -34,7 +34,7 @@ properties:
                 timestep_limit:
                     type: integer
                     minimum: 1
-                    maximum: 999999
+                    maximum: 999999999
                 description:
                     type: string
                     maxLength: 999
