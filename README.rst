@@ -65,11 +65,15 @@ The YAML file syntax is a list of envs, where each object has the following prop
 - **requirements**: List, required - A list of requirements to be installed through pip when the env is downloaded.
 - **files**: List, required - The list of files to be downloaded locally
 
+To permit copying properties across env, you can alternatively wrap your env in an 'env' object, as shown below.
+
 Example
 ======
 .. code:: yaml
 
 	  envs:
+
+        # Primary syntax, where each property is directly defined
 	    - id: Acrobot
 	      version: 0
 	      entry_point: envs:AcrobotEnv
@@ -82,35 +86,35 @@ Example
 	      requirements:
 	        - gym
 	        - numpy
-	      files: &default_files     # & syntax creates an anchor that can be referenced later
+          # & syntax creates an anchor that can be referenced later
+	      files: &default_files
 	        - envs/__init__.py
 	        - envs/acrobot.py
 	        - envs/cartpole.py
 	        - envs/assets/clockwise.png
 
-	    - id: CartPole
-	      version: 1
-	      entry_point: envs:CartPoleEnv
-	      commit_ref: master
-	      timestep_limit: 500
-	      reward_threshold: 475.0
-	      requirements:
-	        - gym
-	        - numpy
-	      files: *default_files     # * syntax references previous anchor
+        # Alternative syntax, where wrapped inside 'env' object to permit copying properties
+	    - env: &cartpole
+	        id: CartPole
+	        version: 1
+	        entry_point: envs:CartPoleEnv
+	        commit_ref: master
+	        timestep_limit: 500
+	        reward_threshold: 475.0
+	        requirements:
+	          - gym
+	          - numpy
+            # * syntax references previous anchor
+	        files: *default_files
 
 	  # Old versions
-	    - id: CartPole
-	      version: 0
-	      entry_point: envs:CartPoleEnv
-	      commit_ref: v1
-	      timestep_limit: 200
-	      trials: 100
-	      reward_threshold: 195.0
-	      kwargs:
-	        mode: easy
-	      nondeterministic: true
-	      files: *default_files     # * syntax references previous anchor
-	      requirements:
-	        - gym
-	        - numpy
+	    - env:
+	        # Copy all properties from cartpole anchor
+	        <<: *cartpole
+	        # Overrides copied properties
+	        version: 0
+	        kwargs: { mode: easy }
+	        timestep_limit: 200
+	        reward_threshold: 195.0
+	        commit_ref: v1
+	        nondeterministic: true
