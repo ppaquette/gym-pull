@@ -181,7 +181,7 @@ The repository must have a ".openai.yml" in its top-level folder on its master b
 
         register_params = [
             'id', 'entry_point', 'timestep_limit', 'trials', 'reward_threshold', 'local_only', 'kwargs',
-            'nondeterministic', 'wrappers']
+            'nondeterministic']
         register_kwargs = { k: user_env[k] for k in register_params if k in user_env }
         register(**register_kwargs)
         self.user_envs.append(user_env)
