@@ -1,4 +1,4 @@
-Registry of All Environments
+List of All Environments
 ======
 
 - [**Doom**](https://github.com/ppaquette/gym-envs/tree/master/doom) - ppaquette/gym-envs
