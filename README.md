@@ -65,56 +65,15 @@ The YAML file syntax is a list of envs, where each object has the following prop
 - **requirements**: List, required - A list of requirements to be installed through pip when the env is downloaded.
 - **files**: List, required - The list of files to be downloaded locally
 
-To permit copying properties across env, you can alternatively wrap your env in an 'env' object, as shown below.
+To permit copying properties across env, you can alternatively wrap your env in an 'env' object, as shown in the example.yml file.
 
-Example
+To view an example, look at example.yml
+
+List of Environments
 ======
-.. code:: yaml
 
-	  envs:
+- [**Doom**](https://github.com/ppaquette/gym-envs/tree/master/doom) - ppaquette/gym-envs
+> 9 Doom levels based on Vizdoom, with meta-level and wrappers to customize map. Can be converted to both discrete and continuous action spaces.
 
-        # Primary syntax, where each property is directly defined
-	    - id: Acrobot
-	      version: 0
-	      entry_point: envs:AcrobotEnv
-	      commit_ref: master
-	      timestep_limit: 500
-	      description: |
-	        The acrobot system includes two joints and two links, where the joint between the two links is actuated.
-	        Initially, the links are hanging downwards, and the goal is to swing the end of the lower link
-	        up to a given height.
-	      requirements:
-	        - gym
-	        - numpy
-          # & syntax creates an anchor that can be referenced later
-	      files: &default_files
-	        - envs/__init__.py
-	        - envs/acrobot.py
-	        - envs/cartpole.py
-	        - envs/assets/clockwise.png
-
-        # Alternative syntax, where wrapped inside 'env' object to permit copying properties
-	    - env: &cartpole
-	        id: CartPole
-	        version: 1
-	        entry_point: envs:CartPoleEnv
-	        commit_ref: master
-	        timestep_limit: 500
-	        reward_threshold: 475.0
-	        requirements:
-	          - gym
-	          - numpy
-            # * syntax references previous anchor
-	        files: *default_files
-
-	  # Old versions
-	    - env:
-	        # Copy all properties from cartpole anchor
-	        <<: *cartpole
-	        # Overrides copied properties
-	        version: 0
-	        kwargs: { mode: easy }
-	        timestep_limit: 200
-	        reward_threshold: 195.0
-	        commit_ref: v1
-	        nondeterministic: true
+- [**Super Mario**](https://github.com/ppaquette/gym-envs/tree/master/super_mario) - ppaquette/gym-envs
+> All 32 levels of the original Super Mario Bros game (with observation space as full screen or 16x13 tiles). Also has meta level combining all levels.
