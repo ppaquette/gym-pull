@@ -69,7 +69,7 @@ class PackageManager(object):
 
         # Validating params
         source_parts = source.split('/')
-        if len(source_parts) != 3:
+        if len(source_parts) != 3 or source_parts[0].lower() != 'github.com':
             logger.warn(""" Invalid Syntax - source must be in the format 'github.com/username/repository[@branch]'
 
 Syntax: gym.pull('github.com/username/repository')
@@ -105,11 +105,14 @@ where username is a GitHub username, repository is the name of a GitHub reposito
                             package_name, packages_before[package_name], package_version)
                 modified_packages.append(package_name)
 
-            # Package conflict - installed or upgraded, but from a different source
-            if len(modified_packages) > 0 and package_name in self.user_packages and source != self.user_packages[package_name]['source']:
+        # Package conflict - check if already installed from a different source
+        for package_name in modified_packages:
+            if package_name in self.user_packages and source != self.user_packages[package_name]['source']:
                 logger.warn('Package conflict - The package "%s" from "%s" was already installed from "%s". '
                             'Uninstalling both packages. Please reinstall the one you want.',
                             package_name, source, self.user_packages[package_name]['source'])
+                self._deregister_envs_from_source(source)
+                self._deregister_envs_from_source(self.user_packages[package_name]['source'])
                 self._run_cmd('pip uninstall -y {}'.format(package_name))
                 del self.user_packages[package_name]
                 self._update_cache()
@@ -121,13 +124,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
             return
 
         # De-register envs with same source
-        envs_to_remove = []
-        for spec in registry.all():
-            if spec.source == source:
-                envs_to_remove.append(spec.id)
-        for env_name in envs_to_remove:
-            registry.deregister(env_name)
-            self.env_ids.remove(env_name.lower())
+        self._deregister_envs_from_source(source)
 
         # Loading new packages
         new_envs = set([])
@@ -145,13 +142,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
 
         # Removing packages and deregistering envs if they don't respect naming convention
         if len(uninstall_packages) > 0:
-            envs_to_remove = []
-            for spec in registry.all():
-                if spec.source == source:
-                    envs_to_remove.append(spec.id)
-            for env_name in envs_to_remove:
-                registry.deregister(env_name)
-                self.env_ids.remove(env_name.lower())
+            self._deregister_envs_from_source(source)
             for package_name in uninstall_packages:
                 self._run_cmd('pip uninstall -y {}'.format(package_name))
             return
@@ -160,16 +151,27 @@ where username is a GitHub username, repository is the name of a GitHub reposito
         self._update_cache()
 
         # Displaying results
+        logger.info('--------------------------------------------------')
         if len(new_envs) > 0:
-            logger.info('--------------------------------------------------')
-            for env in new_envs:
+            for env in sorted(new_envs, key=lambda s: s.lower()):
                 logger.info('Successfully registered the environment: "%s"', env)
+        else:
+            logger.info('No environments have been registered. The following packages were modified: %s', ','.join(modified_packages))
         return
 
     def _run_cmd(self, cmd):
         p = subprocess.Popen(cmd, shell=True)
         p.communicate()
         return p.returncode
+
+    def _deregister_envs_from_source(self, source):
+        envs_to_remove = []
+        for spec in registry.all():
+            if spec.source == source:
+                envs_to_remove.append(spec.id)
+        for env_name in envs_to_remove:
+            registry.deregister(env_name)
+            self.env_ids.remove(env_name.lower())
 
     def _list_packages(self):
         packages = {}
