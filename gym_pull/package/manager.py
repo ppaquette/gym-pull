@@ -225,25 +225,27 @@ where username is a GitHub username, repository is the name of a GitHub reposito
             self.cache_needs_update = True
             try:
                 reload_module(sys.modules[module_name])
-                self.user_packages[package_name] = user_package
             except ImportError:
-                logger.warn('Unable to import the module "%s" from package "%s" (%s). This is usually caused by a '
-                            'invalid pip package. The package will be uninstalled and no longer be loaded on `import gym`.',
-                            module_name, package_name, installed_packages[package_name])
-                self._run_cmd('pip uninstall -y {}'.format(package_name))
+                if 'gym' in package_name:   #To avoid uninstalling failing dependencies
+                    logger.warn('Unable to import the module "%s" from package "%s" (%s). This is usually caused by a '
+                                'invalid pip package. The package will be uninstalled and no longer be loaded on `import gym`.',
+                                module_name, package_name, installed_packages[package_name])
+                    self._run_cmd('pip uninstall -y {}'.format(package_name))
         else:
             try:
                 __import__(module_name)
-                self.user_packages[package_name] = user_package
             except ImportError:
-                self.cache_needs_update = True
-                logger.warn('Unable to import the module "%s" from package "%s" (%s). This is usually caused by a '
-                            'invalid pip package or by an obsolete egg file not removed by pip. The package will be '
-                            'uninstalled and no longer be loaded on `import gym`.', module_name, package_name, installed_packages[package_name])
-                self._run_cmd('pip uninstall -y {}'.format(package_name))
+                if 'gym' in package_name:   #To avoid uninstalling failing dependencies
+                    self.cache_needs_update = True
+                    logger.warn('Unable to import the module "%s" from package "%s" (%s). This is usually caused by a '
+                                'invalid pip package or by an obsolete egg file not removed by pip. The package will be '
+                                'uninstalled and no longer be loaded on `import gym`.', module_name, package_name, installed_packages[package_name])
+                    self._run_cmd('pip uninstall -y {}'.format(package_name))
 
         envs_after = set(registry.list())
         registered_envs = envs_after - envs_before
+        if len(registered_envs) > 0:
+            self.user_packages[package_name] = user_package
         for new_env in registered_envs:
             new_spec = registry.spec(new_env)
             new_spec.source = user_package['source']
