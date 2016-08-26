@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import traceback
 import sys
 import gym
 from six.moves import reload_module
@@ -130,7 +131,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
         new_envs = set([])
         uninstall_packages = []
         for package_name in modified_packages:
-            json_line = json.dumps({ 'name': package_name, 'version': packages_after[package_name], 'source': source })
+            json_line = json.dumps({'name': package_name, 'version': packages_after[package_name], 'source': source})
             user_package, registered_envs = self._load_package(json_line, packages_after)
             for new_env in registered_envs:
                 if not new_env.lower().startswith('{}/'.format(username.lower())):
@@ -226,20 +227,25 @@ where username is a GitHub username, repository is the name of a GitHub reposito
             try:
                 reload_module(sys.modules[module_name])
             except ImportError:
-                if 'gym' in package_name:   #To avoid uninstalling failing dependencies
+                if 'gym' in package_name:   # To avoid uninstalling failing dependencies
                     logger.warn('Unable to import the module "%s" from package "%s" (%s). This is usually caused by a '
-                                'invalid pip package. The package will be uninstalled and no longer be loaded on `import gym`.',
+                                'invalid pip package. The package will be uninstalled and no longer be loaded on `import gym`.\n',
                                 module_name, package_name, installed_packages[package_name])
+                    traceback.print_exc(file=sys.stdout)
+                    sys.stdout.write('\n')
                     self._run_cmd('pip uninstall -y {}'.format(package_name))
         else:
             try:
                 __import__(module_name)
             except ImportError:
-                if 'gym' in package_name:   #To avoid uninstalling failing dependencies
+                if 'gym' in package_name:   # To avoid uninstalling failing dependencies
                     self.cache_needs_update = True
                     logger.warn('Unable to import the module "%s" from package "%s" (%s). This is usually caused by a '
                                 'invalid pip package or by an obsolete egg file not removed by pip. The package will be '
-                                'uninstalled and no longer be loaded on `import gym`.', module_name, package_name, installed_packages[package_name])
+                                'uninstalled and no longer be loaded on `import gym`\n',
+                                module_name, package_name, installed_packages[package_name])
+                    traceback.print_exc(file=sys.stdout)
+                    sys.stdout.write('\n')
                     self._run_cmd('pip uninstall -y {}'.format(package_name))
 
         envs_after = set(registry.list())
