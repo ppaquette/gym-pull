@@ -35,7 +35,3 @@ tutorial/*.html
 # PyCharm project files
 .idea
 vizdoom.ini
-
-# User envs
-gym/envs/custom/*
-

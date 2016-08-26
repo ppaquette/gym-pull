@@ -1,10 +1,75 @@
 import logging
 from gym import error, monitoring
-from gym.scoreboard.api import MAX_VIDEOS, video_name_re, metadata_name_re, upload
-from gym.scoreboard.api import upload_training_episode_batch, upload_training_video, write_archive
+from gym.scoreboard.client import resource, util
 import numpy as np
+# +-+--+-+-+-+ PATCHING --+-+-+-+-+-+
+from gym.scoreboard.api import logger, upload_training_episode_batch, MAX_VIDEOS, upload_training_video
+# +-+--+-+-+-+ /PATCHING --+-+-+-+-+-+
 
-logger = logging.getLogger(__name__)
+
+def upload(training_dir, algorithm_id=None, writeup=None, api_key=None, ignore_open_monitors=False):
+    """Upload the results of training (as automatically recorded by your
+    env's monitor) to OpenAI Gym.
+
+    Args:
+        training_dir (Optional[str]): A directory containing the results of a training run.
+        algorithm_id (Optional[str]): An algorithm id indicating the particular version of the algorithm (including choices of parameters) you are running (visit https://gym.openai.com/algorithms to create an id)
+        writeup (Optional[str]): A Gist URL (of the form https://gist.github.com/<user>/<id>) containing your writeup for this evaluation.
+        api_key (Optional[str]): Your OpenAI API key. Can also be provided as an environment variable (OPENAI_GYM_API_KEY).
+    """
+
+    if not ignore_open_monitors:
+        open_monitors = monitoring._open_monitors()
+        if len(open_monitors) > 0:
+            envs = [m.env.spec.id if m.env.spec else '(unknown)' for m in open_monitors]
+            raise error.Error("Still have an open monitor on {}. You must run 'env.monitor.close()' before uploading.".format(', '.join(envs)))
+
+    env_info, training_episode_batch, training_video = upload_training_data(training_dir, api_key=api_key)
+    env_id = env_info['env_id']
+    training_episode_batch_id = training_video_id = None
+    if training_episode_batch:
+        training_episode_batch_id = training_episode_batch.id
+    if training_video:
+        training_video_id = training_video.id
+
+    if logger.level <= logging.INFO:
+        if training_episode_batch_id is not None and training_video_id is not None:
+            logger.info('[%s] Creating evaluation object from %s with learning curve and training video', env_id, training_dir)
+        elif training_episode_batch_id is not None:
+            logger.info('[%s] Creating evaluation object from %s with learning curve', env_id, training_dir)
+        elif training_video_id is not None:
+            logger.info('[%s] Creating evaluation object from %s with training video', env_id, training_dir)
+        else:
+            raise error.Error("[%s] You didn't have any recorded training data in {}. Once you've used 'env.monitor.start(training_dir)' to start recording, you need to actually run some rollouts. Please join the community chat on https://gym.openai.com if you have any issues.".format(env_id, training_dir))
+
+    evaluation = resource.Evaluation.create(
+        training_episode_batch=training_episode_batch_id,
+        training_video=training_video_id,
+        env=env_info['env_id'],
+        algorithm={
+            'id': algorithm_id,
+        },
+        writeup=writeup,
+        gym_version=env_info['gym_version'],
+        api_key=api_key,
+# >>>>>>>>> START changes >>>>>>>>>>>>>>>>>>>>>>>>
+        env_info=env_info,
+# <<<<<<<<< END changes <<<<<<<<<<<<<<<<<<<<<<<<<<
+    )
+
+    logger.info(
+
+    """
+****************************************************
+You successfully uploaded your evaluation on %s to
+OpenAI Gym! You can find it at:
+
+    %s
+
+****************************************************
+    """.rstrip(), env_id, evaluation.web_url())
+
+    return evaluation
 
 def upload_training_data(training_dir, api_key=None):
     # Could have multiple manifests
@@ -23,8 +88,10 @@ def upload_training_data(training_dir, api_key=None):
     seeds = results['seeds']
     videos = results['videos']
 
+# >>>>>>>>> START changes >>>>>>>>>>>>>>>>>>>>>>>>
     if '/' in env_info['env_id']:
-        raise error.Error('Custom user environments downloaded from gym.pull() can not be uploaded to the scoreboard.')
+        logger.warn('Scoreboard support for user environments is limited. Your submission will only appear for a limited number of environments.')
+# <<<<<<<<< END changes <<<<<<<<<<<<<<<<<<<<<<<<<<
 
     env_id = env_info['env_id']
     logger.debug('[%s] Uploading data from manifest %s', env_id, ', '.join(manifests))

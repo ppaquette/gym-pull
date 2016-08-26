@@ -1,69 +1,54 @@
+import distutils.version
 import logging
-import os
-import re
-import types
-import gym
-from gym.configuration import logger_setup
+import sys
+
+from gym import error
+from gym.configuration import logger_setup, undo_logger_setup
+from gym.utils import reraise
 
 logger = logging.getLogger(__name__)
+
+# Do this before importing any other gym modules, as most of them import some
+# dependencies themselves.
+def sanity_check_dependencies():
+    import numpy
+    import requests
+    import six
+
+    if distutils.version.LooseVersion(numpy.__version__) < distutils.version.LooseVersion('1.10.4'):
+        logger.warn("You have 'numpy' version %s installed, but 'gym' requires at least 1.10.4. HINT: upgrade via 'pip install -U numpy'.", numpy.__version__)
+
+    if distutils.version.LooseVersion(requests.__version__) < distutils.version.LooseVersion('2.0'):
+        logger.warn("You have 'requests' version %s installed, but 'gym' requires at least 2.0. HINT: upgrade via 'pip install -U requests'.", requests.__version__)
+
+# We automatically configure a logger with a simple stderr handler. If
+# you'd rather customize logging yourself, run undo_logger_setup.
+#
+# (Note: this needs to happen before importing the rest of gym, since
+# we may print a warning at load time.)
 logger_setup(logger)
 del logger_setup
 
-# --------------------
-# Modifying gym registry
-# --------------------
-def deregister(self, id):
-    if not id in self.env_specs:
-        logger.warn('Unable to deregister id: %s. Are you certain it is registered?', id)
-    else:
-        del self.env_specs[id]
+sanity_check_dependencies()
 
-def list(self):
-    return sorted([spec.id for spec in self.all()], key=lambda s: s.lower())
+from gym.core import Env, Space, Wrapper
+from gym.envs import make, spec
+from gym.scoreboard.api import upload
 
-import gym.envs.registration
-gym.envs.registration.env_id_re = re.compile(r'^([\w/:-]+)-v(\d+)$')
-gym.envs.registration.registry.deregister = types.MethodType(deregister, gym.envs.registration.registry)
-gym.envs.registration.registry.list = types.MethodType(list, gym.envs.registration.registry)
-gym.envs.registration.deregister = gym.envs.registration.registry.deregister
-gym.envs.registration.list = gym.envs.registration.registry.list
-gym.envs.deregister = gym.envs.registration.registry.deregister
-gym.envs.list = gym.envs.registration.registry.list
-gym.list = gym.envs.registration.registry.list
+# *-*-*-*-*-*-*-* Monkey Patching *-*-*-*-*-*--*-*-*-*
+import gym
+import gym_pull.scoreboard.api
+import gym_pull.monitoring.monitor
+import gym_pull.envs.registration
+gym.upload = gym_pull.scoreboard.api.upload
+gym.scoreboard.api.upload = gym_pull.scoreboard.api.upload
+gym.scoreboard.api.upload_training_data = gym_pull.scoreboard.api.upload_training_data
+gym.envs.registration.env_id_re = gym_pull.envs.registration.env_id_re
+# *-*-*-*-*-*-*-* /Monkey Patching *-*-*-*-*-*--*-*-*-*
 
-# --------------------
-# Modifying gym scoreboard
-# --------------------
-github_api_key = os.environ.get('GITHUB_API_KEY')
-github_api_base = os.environ.get('OPENAI_GITHUB_API_BASE', 'https://api.github.com')
-github_raw_base = os.environ.get('OPENAI_GITHUB_RAW_BASE', 'https://raw.githubusercontent.com')
-base_without_api_key = [ github_api_base, github_raw_base ]
+# >>>>>>>>> START changes >>>>>>>>>>>>>>>>>>>>>>>>
+from gym_pull.envs import list
+from gym_pull.package import pull
 
-import gym.scoreboard
-gym.scoreboard.github_api_key = github_api_key
-gym.scoreboard.github_api_base = github_api_base
-gym.scoreboard.github_raw_base = github_raw_base
-gym.scoreboard.base_without_api_key = base_without_api_key
-
-from gym_pull.scoreboard.client.resource import CommitHash, UserEnvConfig, convert_to_gym_object
-gym.scoreboard.CommitHash = CommitHash
-gym.scoreboard.client.resource.CommitHash = CommitHash
-gym.scoreboard.UserEnvConfig = UserEnvConfig
-gym.scoreboard.client.resource.UserEnvConfig = UserEnvConfig
-gym.scoreboard.client.resource.convert_to_gym_object = convert_to_gym_object
-
-from gym_pull.scoreboard.api import upload_training_data
-gym.scoreboard.api.upload_training_data = upload_training_data
-
-from gym_pull.scoreboard.client.util import utf8
-gym.scoreboard.client.util.utf8 = utf8
-
-from gym_pull.scoreboard.client.api_requestor import request_raw
-gym.scoreboard.client.api_requestor.APIRequestor.request_raw = types.MethodType(request_raw, gym.scoreboard.client.api_requestor.APIRequestor)
-gym.scoreboard.client.resource.api_requestor.APIRequestor.request_raw = request_raw
-
-# --------------------
-# Adding versioning functionality
-# --------------------
-from gym_pull.versioning import pull
-gym.pull = pull
+__all__ = ["Env", "Space", "Wrapper", "list", "make", "pull", "spec", "upload"]
+# <<<<<<<<< END changes <<<<<<<<<<<<<<<<<<<<<<<<<<
