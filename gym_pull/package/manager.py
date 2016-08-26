@@ -206,7 +206,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
             user_package = json.loads(json_line)
             valid_json = True
         except ValueError:
-            pass
+            user_package = {}
 
         package_name = user_package['name'] if 'name' in user_package else None
         module_name = package_name.replace('-', '_') if package_name is not None else ''
