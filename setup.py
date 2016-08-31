@@ -5,10 +5,10 @@ import sys, os.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'gym_pull'))
 from version import VERSION
 
-setup(name='gym_pull',
+setup(name='gym-pull',
     version=VERSION,
     description='Add-on for OpenAI Gym that supports automatic downloading of user environments.',
-    url='https://github.com/ppaquette/gym_pull',
+    url='https://github.com/ppaquette/gym-pull',
     author='Philip Paquette',
     author_email='pcpaquette@gmail.com',
     license='MIT License',

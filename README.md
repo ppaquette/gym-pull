@@ -1,7 +1,7 @@
-# gym_pull
+# gym-pull
 #### **Gym Pull is an add-on for OpenAI Gym that allows the automatic downloading of user environments.**
 ---
-### [**List of All Environments**](https://github.com/ppaquette/gym_pull/blob/master/list_of_envs.md)
+### [**List of All Environments**](https://github.com/ppaquette/gym-pull/blob/master/list_of_envs.md)
 ---
 - [Installation](#installation)
 - [Basic Usage](#basic_usage)
@@ -10,9 +10,9 @@
 <div id="installation"></div>Installation
 ============
 
-``gym_pull`` should be downloaded through pip with the command: ``pip install gym_pull``
+``gym-pull`` should be downloaded through pip with the command: ``pip install gym-pull``
 
-To run the add-on, you need to import gym, and then gym_pull:
+To run the add-on, you need to import gym, and then gym-pull:
 
 .. code:: python
 
