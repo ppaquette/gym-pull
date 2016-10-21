@@ -47,6 +47,7 @@ gym.envs.registration.env_id_re = gym_pull.envs.registration.env_id_re
 # *-*-*-*-*-*-*-* /Monkey Patching *-*-*-*-*-*--*-*-*-*
 
 # >>>>>>>>> START changes >>>>>>>>>>>>>>>>>>>>>>>>
+logger.setLevel(logging.INFO)
 from gym_pull.envs import list
 from gym_pull.package import pull
 
