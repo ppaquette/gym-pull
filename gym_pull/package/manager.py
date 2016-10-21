@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 gym_abs_path = os.path.dirname(os.path.abspath(gym.__file__))
 user_env_cache_name = '.envs.json'
+pip_exec = 'pip3' if sys.version_info[0] == 3 else 'pip2'
 
 class PackageManager(object):
     """
@@ -84,7 +85,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
         # Installing pip package
         logger.info('Installing pip package from "%s"', git_url)
         packages_before = self._list_packages()
-        return_code = self._run_cmd('pip install --upgrade git+{}'.format(git_url))
+        return_code = self._run_cmd('{} install --upgrade git+{}'.format(pip_exec, git_url))
         if return_code != 0:        # Failed - pip will display the error message
             return
 
@@ -114,7 +115,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
                             package_name, source, self.user_packages[package_name]['source'])
                 self._deregister_envs_from_source(source)
                 self._deregister_envs_from_source(self.user_packages[package_name]['source'])
-                self._run_cmd('pip uninstall -y {}'.format(package_name))
+                self._run_cmd('{} uninstall -y {}'.format(pip_exec, package_name))
                 del self.user_packages[package_name]
                 self._update_cache()
                 return
@@ -145,7 +146,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
         if len(uninstall_packages) > 0:
             self._deregister_envs_from_source(source)
             for package_name in uninstall_packages:
-                self._run_cmd('pip uninstall -y {}'.format(package_name))
+                self._run_cmd('{} uninstall -y {}'.format(pip_exec, package_name))
             return
 
         # Updating cache
@@ -180,7 +181,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
         # e.g. functools32 (3.2.3.post2) or gym (0.1.6, /www/ppaquette/gym) => name: functools32, version=>3.2.3.post2
         package_re = re.compile(r'^([^\(]+) \(([^ ,\)]*)')
         temp_file = os.path.join(tempfile.mkdtemp(), 'pip_list.txt')
-        self._run_cmd('pip list --log {} > {}'.format(temp_file, os.devnull))
+        self._run_cmd('{} list --log {} > {}'.format(pip_exec, temp_file, os.devnull))
 
         with open(temp_file) as f:
             for line in f:
@@ -233,7 +234,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
                                 module_name, package_name, installed_packages[package_name])
                     traceback.print_exc(file=sys.stdout)
                     sys.stdout.write('\n')
-                    self._run_cmd('pip uninstall -y {}'.format(package_name))
+                    self._run_cmd('{} uninstall -y {}'.format(pip_exec, package_name))
         else:
             try:
                 __import__(module_name)
@@ -245,7 +246,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
                                 module_name, package_name, installed_packages[package_name])
                     traceback.print_exc(file=sys.stdout)
                     sys.stdout.write('\n')
-                    self._run_cmd('pip uninstall -y {}'.format(package_name))
+                    self._run_cmd('{} uninstall -y {}'.format(pip_exec, package_name))
 
         envs_after = set(registry.list())
         registered_envs = envs_after - envs_before
