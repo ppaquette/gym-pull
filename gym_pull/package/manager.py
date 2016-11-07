@@ -181,7 +181,7 @@ where username is a GitHub username, repository is the name of a GitHub reposito
         # e.g. functools32 (3.2.3.post2) or gym (0.1.6, /www/ppaquette/gym) => name: functools32, version=>3.2.3.post2
         package_re = re.compile(r'^([^\(]+) \(([^ ,\)]*)')
         temp_file = os.path.join(tempfile.mkdtemp(), 'pip_list.txt')
-        self._run_cmd('{} list --log {} > {}'.format(pip_exec, temp_file, os.devnull))
+        self._run_cmd('{} list --format=legacy --log {} > {}'.format(pip_exec, temp_file, os.devnull))
 
         with open(temp_file) as f:
             for line in f:
