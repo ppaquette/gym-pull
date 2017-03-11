@@ -15,5 +15,5 @@ setup(name='gym-pull',
     packages=[package for package in find_packages()
               if package.startswith('gym')],
     zip_safe=False,
-    install_requires=[ 'gym>=0.2.3', 'six' ],
+    install_requires=[ 'gym>=0.8.0', 'six' ],
 )

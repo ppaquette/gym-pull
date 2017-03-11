@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 # -+-+-+-+ PATCHING -+-+-+-+-+-+-+-+-+-
 import gym
 
-class Monitor(gym.monitoring.monitor.Monitor):
+class Monitor(gym.wrappers.monitoring.Monitor):
 # -+-+-+-+ /PATCHING -+-+-+-+-+-+-+-+-+-
 
     def _env_info(self):
